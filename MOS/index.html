@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOS Burgers - POS System</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="dashboard.css">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+<div class="app-wrapper">
+  <nav class="sidebar" id="sidebar" role="navigation" aria-label="Primary navigation">
+    <div class="sidebar-brand">
+      <div class="brand-logo" aria-hidden="true">
+        <span class="brand-icon">M</span>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">MOS</span>
+        <span class="brand-sub">BURGERS</span>
+      </div>
+    </div>
+
+    <ul class="nav-links">
+      <li class="nav-item active">
+        <a href="index.html" class="nav-link">
+          <span class="nav-label">Dashboard</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="pages/store.html" class="nav-link">
+          <span class="nav-label">Store</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="pages/orders.html" class="nav-link">
+          <span class="nav-label">Orders</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="pages/customers.html" class="nav-link">
+          <span class="nav-label">Customers</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="pages/reports.html" class="nav-link">
+          <span class="nav-label">Reports</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div class="sys-status">
+        <span class="status-dot"></span>
+        <span>System Online</span>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main" class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button type="button" class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="page-title">
+          <h1>Dashboard</h1>
+          <p id="currentDate"></p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="quick-stat">
+          <span class="qs-label">Today's Orders</span>
+          <span class="qs-value" id="todayOrderCount">0</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-area">
+      <div class="stats-grid">
+        <div class="stat-card glow-orange">
+          <div class="stat-icon">Rev</div>
+          <div class="stat-info">
+            <span class="stat-label">Today's Revenue</span>
+            <span class="stat-value" id="todayRevenue">Rs. 0</span>
+          </div>
+        </div>
+        <div class="stat-card glow-red">
+          <div class="stat-icon">Orders</div>
+          <div class="stat-info">
+            <span class="stat-label">Total Orders</span>
+            <span class="stat-value" id="totalOrders">0</span>
+          </div>
+        </div>
+        <div class="stat-card glow-yellow">
+          <div class="stat-icon">Cust</div>
+          <div class="stat-info">
+            <span class="stat-label">Total Customers</span>
+            <span class="stat-value" id="totalCustomers">0</span>
+          </div>
+        </div>
+        <div class="stat-card glow-orange">
+          <div class="stat-icon">Items</div>
+          <div class="stat-info">
+            <span class="stat-label">Menu Items</span>
+            <span class="stat-value" id="totalItems">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="dash-card recent-orders-card">
+          <div class="card-header">
+            <h2>Recent Orders</h2>
+            <a href="pages/orders.html" class="card-link">View All</a>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Order ID</th>
+                  <th>Customer</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="recentOrdersBody">
+                </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="dash-card top-items-card">
+          <div class="card-header">
+            <h2>Top Menu Items</h2>
+          </div>
+          <div id="topItemsList" class="top-items-list">
+          </div>
+        </div>
+
+        <div class="dash-card quick-actions-card">
+          <div class="card-header">
+            <h2>Quick Actions</h2>
+          </div>
+          <div class="quick-actions">
+            <a href="pages/orders.html" class="qa-btn qa-primary">New Order</a>
+            <a href="pages/store.html" class="qa-btn qa-secondary">Add Item</a>
+            <a href="pages/customers.html" class="qa-btn qa-secondary">Add Customer</a>
+            <a href="pages/reports.html" class="qa-btn qa-secondary">View Reports</a>
+          </div>
+        </div>
+
+        <div class="dash-card expiry-card">
+          <div class="card-header">
+            <h2>Expiry Alerts</h2>
+          </div>
+          <div id="expiryAlerts" class="expiry-list">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="validation.js"></script>
+<script src="app.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Orders - MOS Burgers</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="../dashboard.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-wrapper">
+    <nav class="sidebar" id="sidebar" role="navigation" aria-label="Primary navigation">
+      <div class="sidebar-brand">
+        <div class="brand-logo" aria-hidden="true"><span class="brand-icon">M</span></div>
+        <div class="brand-text"><span class="brand-name">MOS</span><span class="brand-sub">BURGERS</span></div>
+      </div>
+      <ul class="nav-links">
+        <li class="nav-item"><a href="../index.html" class="nav-link"><span class="nav-label">Dashboard</span></a></li>
+        <li class="nav-item"><a href="store.html" class="nav-link"><span class="nav-label">Store</span></a></li>
+        <li class="nav-item active"><a href="orders.html" class="nav-link"><span class="nav-label">Orders</span></a></li>
+        <li class="nav-item"><a href="customers.html" class="nav-link"><span class="nav-label">Customers</span></a></li>
+        <li class="nav-item"><a href="reports.html" class="nav-link"><span class="nav-label">Reports</span></a></li>
+      </ul>
+    </nav>
+
+    <main id="main" class="main-content">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button type="button" class="menu-toggle" id="menuToggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+          <div class="page-title"><h1>Orders</h1></div>
+        </div>
+      </header>
+      <div class="content-area">
+        <div class="dash-card">
+          <div class="section-header">
+            <h2>Create Order</h2>
+          </div>
+          <form id="orderForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="customerSelect">Customer</label>
+                <select id="customerSelect" class="form-control" name="customer" required></select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="itemSelect">Menu Item</label>
+                <select id="itemSelect" class="form-control" name="item" required></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="itemQty">Quantity</label>
+                <input id="itemQty" class="form-control" name="quantity" type="number" value="1" min="1" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="orderDiscount">Discount %</label>
+                <input id="orderDiscount" class="form-control" name="discount" type="number" value="0" min="0" max="100" />
+              </div>
+            </div>
+            <button id="addToCart" class="btn btn-secondary" type="button">Add to Cart</button>
+          </form>
+
+          <div class="table-wrapper" style="margin-top:20px;">
+            <table class="data-table" id="cartTable">
+              <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Subtotal</th><th>Remove</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div style="margin-top:18px; display:flex; justify-content:flex-end; gap:16px; align-items:center; flex-wrap:wrap;">
+            <div class="small-label">Total</div>
+            <div id="cartTotal" class="stat-value">Rs. 0</div>
+            <button id="placeOrder" class="btn btn-primary" type="button">Place Order</button>
+          </div>
+        </div>
+
+        <div class="dash-card" style="margin-top:20px;">
+          <div class="section-header">
+            <h2>Previous Orders</h2>
+          </div>
+          <div class="table-wrapper">
+            <table class="data-table" id="ordersTable">
+              <thead>
+                <tr><th>Order ID</th><th>Customer</th><th>Amount</th><th>Date</th><th>Items</th><th>Receipt</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../data.js"></script>
+  <script src="../app.js"></script>
+  <script>
+    (function () {
+      const customerSelect = document.getElementById('customerSelect');
+      const itemSelect = document.getElementById('itemSelect');
+      const itemQty = document.getElementById('itemQty');
+      const orderDiscount = document.getElementById('orderDiscount');
+      const cartTable = document.querySelector('#cartTable tbody');
+      const cartTotal = document.getElementById('cartTotal');
+      const ordersTable = document.querySelector('#ordersTable tbody');
+      let cart = [];
+
+      const createRow = html => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = html;
+        return tr;
+      };
+
+      const loadCustomers = () => {
+        const customers = MOS.getCustomers();
+        customerSelect.innerHTML = '<option value="" disabled selected>Select customer</option>';
+        customers.forEach(c => {
+          const option = document.createElement('option');
+          option.value = c.id;
+          option.textContent = `${c.name} (${c.id})`;
+          customerSelect.appendChild(option);
+        });
+      };
+
+      const loadItems = () => {
+        const items = MOS.getItems();
+        itemSelect.innerHTML = '<option value="" disabled selected>Select item</option>';
+        items.filter(i => i.quantity > 0).forEach(item => {
+          const option = document.createElement('option');
+          option.value = item.code;
+          option.textContent = `${item.name} — ${MOS.formatCurrency(item.price)} (${item.quantity} left)`;
+          itemSelect.appendChild(option);
+        });
+      };
+
+      const renderCart = () => {
+        cartTable.innerHTML = '';
+
+        if (cart.length === 0) {
+          cartTable.appendChild(createRow('<td colspan="5" class="empty-row">Cart is empty.</td>'));
+          cartTotal.textContent = 'Rs. 0';
+          return;
+        }
+
+        let total = 0;
+        cart.forEach((item, index) => {
+          const subtotal = item.quantity * item.price;
+          total += subtotal;
+          cartTable.appendChild(createRow(`
+            <td>${item.name}</td>
+            <td>${item.quantity}</td>
+            <td>${MOS.formatCurrency(item.price)}</td>
+            <td>${MOS.formatCurrency(subtotal)}</td>
+            <td><button type="button" class="action-btn" data-index="${index}" aria-label="Remove item">REMOVE</button></td>
+          `));
+        });
+
+        const discount = Number(orderDiscount.value) || 0;
+        const finalAmount = total - (total * discount / 100);
+        cartTotal.textContent = MOS.formatCurrency(finalAmount);
+      };
+
+      const addItemToCart = () => {
+        const itemCode = itemSelect.value;
+        const qty = parseInt(itemQty.value, 10);
+
+        if (!itemCode || qty <= 0) {
+          return MOS.showToast('Select item and quantity', 'error');
+        }
+
+        const items = MOS.getItems();
+        const item = items.find(i => i.code === itemCode);
+        if (!item) {
+          return MOS.showToast('Selected item not found', 'error');
+        }
+        if (qty > item.quantity) {
+          return MOS.showToast('Not enough stock', 'error');
+        }
+
+        const existing = cart.find(entry => entry.code === itemCode);
+        if (existing) {
+          if (existing.quantity + qty > item.quantity) {
+            return MOS.showToast('Not enough stock for additional quantity', 'error');
+          }
+          existing.quantity += qty;
+        } else {
+          cart.push({ code: item.code, name: item.name, price: item.price, quantity: qty });
+        }
+
+        renderCart();
+        MOS.showToast('Added to cart');
+      };
+
+      const placeOrder = () => {
+        const customerId = customerSelect.value;
+        if (!customerId) return MOS.showToast('Please select a customer', 'error');
+        if (cart.length === 0) return MOS.showToast('Cart is empty', 'error');
+
+        const customers = MOS.getCustomers();
+        const customer = customers.find(c => c.id === customerId);
+        if (!customer) return MOS.showToast('Customer not found', 'error');
+
+        const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const discount = Number(orderDiscount.value) || 0;
+        const finalAmount = total - (total * discount / 100);
+
+        const order = {
+          orderId: MOS.generateId('O'),
+          customerId: customer.id,
+          customerName: customer.name,
+          items: cart.map(item => ({ code: item.code, name: item.name, quantity: item.quantity, price: item.price })),
+          total,
+          discount,
+          finalAmount,
+          date: new Date().toISOString().split('T')[0]
+        };
+
+        const orders = MOS.getOrders();
+        orders.push(order);
+        MOS.saveOrders(orders);
+
+        const updatedItems = MOS.getItems().map(item => {
+          const cartItem = cart.find(entry => entry.code === item.code);
+          if (cartItem) {
+            item.quantity = Math.max(0, item.quantity - cartItem.quantity);
+          }
+          return item;
+        });
+        MOS.saveItems(updatedItems);
+
+        MOS.showToast('Order placed successfully');
+        cart = [];
+        renderCart();
+        loadItems();
+        renderOrders();
+        document.dispatchEvent(new CustomEvent('mos:dataChanged'));
+      };
+
+      const renderOrders = () => {
+        const orders = MOS.getOrders();
+        ordersTable.innerHTML = '';
+
+        if (orders.length === 0) {
+          ordersTable.appendChild(createRow('<td colspan="6" class="empty-row">No orders yet.</td>'));
+          return;
+        }
+
+        orders.slice().reverse().forEach(order => {
+          ordersTable.appendChild(createRow(`
+            <td>${order.orderId}</td>
+            <td>${order.customerName}</td>
+            <td>${MOS.formatCurrency(order.finalAmount || order.total || 0)}</td>
+            <td>${MOS.formatDate(order.date)}</td>
+            <td>${order.items.length}</td>
+            <td><button type="button" class="action-btn" data-order-id="${order.orderId}" aria-label="Generate receipt">RECEIPT</button></td>
+          `));
+        });
+      };
+
+      const generateReceipt = order => {
+        const { jsPDF } = window.jspdf || {};
+        if (!jsPDF) {
+          return MOS.showToast('Receipt generation requires jsPDF.', 'error');
+        }
+
+        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+        const margin = 40;
+        let y = margin;
+        const lineHeight = 20;
+
+        doc.setFontSize(18);
+        doc.text('MOS Burgers', margin, y);
+        y += lineHeight * 1.5;
+
+        doc.setFontSize(12);
+        doc.text(`Receipt: ${order.orderId}`, margin, y);
+        y += lineHeight;
+        doc.text(`Customer: ${order.customerName}`, margin, y);
+        y += lineHeight;
+        doc.text(`Date: ${MOS.formatDate(order.date)}`, margin, y);
+        y += lineHeight;
+        doc.text(`Discount: ${order.discount || 0}%`, margin, y);
+        y += lineHeight * 1.5;
+
+        doc.setFontSize(13);
+        doc.text('Items', margin, y);
+        y += lineHeight;
+        doc.setFontSize(11);
+        doc.text('Item', margin, y);
+        doc.text('Qty', margin + 260, y);
+        doc.text('Price', margin + 330, y);
+        doc.text('Subtotal', margin + 430, y);
+        y += lineHeight;
+        doc.setLineWidth(0.5);
+        doc.line(margin, y - 8, 550, y - 8);
+
+        order.items.forEach(item => {
+          const subtotal = item.quantity * item.price;
+          if (y > 740) {
+            doc.addPage();
+            y = margin;
+          }
+          doc.text(item.name, margin, y);
+          doc.text(String(item.quantity), margin + 260, y);
+          doc.text(MOS.formatCurrency(item.price), margin + 330, y);
+          doc.text(MOS.formatCurrency(subtotal), margin + 430, y);
+          y += lineHeight;
+        });
+
+        y += lineHeight;
+        doc.setFontSize(12);
+        doc.text(`Total: ${MOS.formatCurrency(order.total || 0)}`, margin, y);
+        y += lineHeight;
+        doc.text(`Final Amount: ${MOS.formatCurrency(order.finalAmount || order.total || 0)}`, margin, y);
+
+        doc.save(`${order.orderId}_receipt.pdf`);
+      };
+
+      document.getElementById('addToCart').addEventListener('click', addItemToCart);
+      cartTable.addEventListener('click', event => {
+        const button = event.target.closest('button[data-index]');
+        if (!button) return;
+        const index = Number(button.dataset.index);
+        cart.splice(index, 1);
+        renderCart();
+      });
+      ordersTable.addEventListener('click', event => {
+        const button = event.target.closest('button[data-order-id]');
+        if (!button) return;
+        const orderId = button.dataset.orderId;
+        const order = MOS.getOrders().find(o => o.orderId === orderId);
+        if (order) generateReceipt(order);
+      });
+      orderDiscount.addEventListener('input', renderCart);
+      document.getElementById('placeOrder').addEventListener('click', placeOrder);
+
+      document.addEventListener('DOMContentLoaded', () => {
+        if (typeof MOS !== 'undefined' && MOS.seedData) MOS.seedData();
+        loadCustomers();
+        loadItems();
+        renderCart();
+        renderOrders();
+      });
+    })();
+  </script>
+</body>
+</html>
